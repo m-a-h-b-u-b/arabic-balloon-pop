@@ -1,4 +1,4 @@
-# ArabicBalloonPop 🎈
+# Arabic Balloon Pop 🎈
 
 **Learn Quranic & Arabic Words in a Fun Way!**
 

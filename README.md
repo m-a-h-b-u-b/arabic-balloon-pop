@@ -38,7 +38,7 @@ ArabicBalloonPop is a browser-based educational game where players pop colorful 
 
 **License:** Apache 2.0  
 **Author:** Md Mahbubur Rahman  
-**Play Online:** [https://m-a-h-b-u-b.github.io/angry-blocks-attack/](https://m-a-h-b-u-b.github.io/arabic-balloon-pop/)  
-**GitHub Repo:** [https://github.com/m-a-h-b-u-b/angry-blocks-attack](https://github.com/m-a-h-b-u-b/arabic-balloon-pop)
+**Play Online:** [https://m-a-h-b-u-b.github.io/arabic-balloon-pop/](https://m-a-h-b-u-b.github.io/arabic-balloon-pop/)  
+**GitHub Repo:** [https://github.com/m-a-h-b-u-b/arabic-balloon-pop](https://github.com/m-a-h-b-u-b/arabic-balloon-pop)
 
   

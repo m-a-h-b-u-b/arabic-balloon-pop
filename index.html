@@ -6,18 +6,17 @@ Author  : Md Mahbubur Rahman
 URL     : https://m-a-h-b-u-b.github.io
 GitHub  : https://github.com/m-a-h-b-u-b/arabic-ballon-pop
 -->
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>Arabic Word Balloon Pop Game</title>
+<title>Arabic Balloon Pop Fiesta</title>
 <style>
-html,body{margin:0;height:100%;background:#87ceeb;font-family:Arial;display:flex;justify-content:center;align-items:center;}
+html,body{margin:0;height:100%;background:#87ceeb;font-family:Arial;display:flex;justify-content:center;align-items:center;overflow:hidden;}
 #gameContainer{position:relative;display:flex;flex-direction:column;align-items:center;}
 #gameCanvas{background:linear-gradient(#87ceeb,#fff);border:3px solid #333;display:none;}
 #ui{margin-bottom:10px;color:#333;font-size:20px;display:flex;gap:15px;display:none;}
-button{cursor:pointer;padding:8px 12px;font-size:16px;}
+button{cursor:pointer;padding:8px 12px;font-size:16px;border-radius:6px;border:none;}
 #meaningPopup,#reviewPopup{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
 background:rgba(255,255,255,0.95);padding:15px 25px;border:2px solid #333;font-size:20px;color:#000;border-radius:8px;display:none;text-align:center;z-index:10;max-width:90%;}
 #categorySelect{margin-bottom:20px;font-size:18px;}
@@ -28,8 +27,9 @@ background:rgba(255,255,255,0.95);padding:15px 25px;border:2px solid #333;font-s
   <select id="categorySelect">
     <option value="">Select Category</option>
     <option value="names">Names of Allah</option>
-    <option value="prophets">Prophets</option>
     <option value="hajj">Hajj Terms</option>
+    <option value="places">Quranic Places</option>
+    <option value="verbs">Quranic Verbs</option>
   </select>
   <button id="startBtn">Start Game</button>
   <div id="ui">
@@ -45,222 +45,52 @@ background:rgba(255,255,255,0.95);padding:15px 25px;border:2px solid #333;font-s
 </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreEl = document.getElementById('score');
-const timerEl = document.getElementById('timer');
-const livesEl = document.getElementById('lives');
-const popup = document.getElementById('meaningPopup');
-const reviewPopup = document.getElementById('reviewPopup');
-const freezeBtn = document.getElementById('freezeBtn');
-const doubleBtn = document.getElementById('doubleBtn');
-const startBtn = document.getElementById('startBtn');
-const categorySelect = document.getElementById('categorySelect');
+const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+const scoreEl=document.getElementById('score'), timerEl=document.getElementById('timer'), livesEl=document.getElementById('lives');
+const popup=document.getElementById('meaningPopup'), reviewPopup=document.getElementById('reviewPopup');
+const freezeBtn=document.getElementById('freezeBtn'), doubleBtn=document.getElementById('doubleBtn');
+const startBtn=document.getElementById('startBtn'), categorySelect=document.getElementById('categorySelect');
 
-let balloons=[], pops=[];
-let score=0, timeLeft=180, balloonSpeed=1.5;
-let freezeTime=false, doublePoints=false;
-let wrongSound, bgMusic;
-let currentWord=null;
-let ttsAudio=null;
-let lives=3;
-let learnedWords=[];
+let balloons=[], particles=[], score=0, timeLeft=180, balloonSpeed=1.5;
+let freezeTime=false, doublePoints=false, lives=3, learnedWords=[], currentWord=null, categoryWords=[];
+let wrongSound=new Audio("https://www.soundjay.com/animal/goat-bleat-01.mp3");
+let bgMusic=new Audio("https://www.soundjay.com/button/button-09.mp3");
 
-/* ---------- WORD LISTS ---------- */
-const allWords = {
-  names:[ // 12 Names of Allah
-    {word:"الله", meaning:"Allah"},
-    {word:"الرحمن", meaning:"The Most Merciful"},
-    {word:"الرحيم", meaning:"The Most Compassionate"},
-    {word:"الملك", meaning:"The King"},
-    {word:"القدوس", meaning:"The Holy"},
-    {word:"السلام", meaning:"The Source of Peace"},
-    {word:"المؤمن", meaning:"The Granter of Security"},
-    {word:"العزيز", meaning:"The Almighty"},
-    {word:"الجبار", meaning:"The Compeller"},
-    {word:"المتكبر", meaning:"The Supreme"},
-    {word:"الخالق", meaning:"The Creator"},
-    {word:"البارئ", meaning:"The Evolver"}
-  ],
-  prophets:[ // 14 Prophets
-    {word:"نوح", meaning:"Noah"},
-    {word:"هود", meaning:"Hud"},
-    {word:"صالح", meaning:"Salih"},
-    {word:"إبراهيم", meaning:"Abraham"},
-    {word:"إسماعيل", meaning:"Ishmael"},
-    {word:"إسحاق", meaning:"Isaac"},
-    {word:"يعقوب", meaning:"Jacob"},
-    {word:"يوسف", meaning:"Joseph"},
-    {word:"موسى", meaning:"Moses"},
-    {word:"هارون", meaning:"Aaron"},
-    {word:"داود", meaning:"David"},
-    {word:"سليمان", meaning:"Solomon"},
-    {word:"عيسى", meaning:"Jesus"},
-    {word:"محمد", meaning:"Muhammad"}
-  ],
-  hajj:[ // 9 Hajj terms
-    {word:"حج", meaning:"Hajj (Pilgrimage)"},
-    {word:"عرفات", meaning:"Arafat"},
-    {word:"مزدلفة", meaning:"Muzdalifah"},
-    {word:"منى", meaning:"Mina"},
-    {word:"رمي الجمرات", meaning:"Stoning of the Jamrah"},
-    {word:"طواف", meaning:"Tawaf (Circumambulation)"},
-    {word:"سعي", meaning:"Sa’i (between Safa & Marwah)"},
-    {word:"إفاضة", meaning:"Departure from Arafat"},
-    {word:"إحرام", meaning:"State of ritual purity"}
-  ]
-};
-/* --------------------------------- */
+// ===== WORD LISTS =====
+const allWords={names:[{word:"الله",meaning:"Allah"},{word:"الرحمن",meaning:"The Most Merciful"},{word:"الرحيم",meaning:"The Most Compassionate"},{word:"الملك",meaning:"The King"},{word:"القدوس",meaning:"The Holy"},{word:"السلام",meaning:"The Source of Peace"},{word:"المؤمن",meaning:"The Granter of Security"},{word:"العزيز",meaning:"The Almighty"},{word:"الجبار",meaning:"The Compeller"},{word:"المتكبر",meaning:"The Supreme"},{word:"الخالق",meaning:"The Creator"},{word:"البارئ",meaning:"The Evolver"}],
+hajj:[{word:"حج",meaning:"Hajj (Pilgrimage)"},{word:"عرفات",meaning:"Arafat"},{word:"مزدلفة",meaning:"Muzdalifah"},{word:"منى",meaning:"Mina"},{word:"رمي الجمرات",meaning:"Stoning of the Jamrah"},{word:"طواف",meaning:"Tawaf (Circumambulation)"},{word:"سعي",meaning:"Sa’i (between Safa & Marwah)"},{word:"إفاضة",meaning:"Departure from Arafat"},{word:"إحرام",meaning:"State of ritual purity"}],
+places:[{word:"مكة",meaning:"Mecca"},{word:"المدينة",meaning:"Medina"},{word:"بدر",meaning:"Badr"},{word:"أحد",meaning:"Uhud"},{word:"القدس",meaning:"Jerusalem"},{word:"بيت_المقدس",meaning:"Al-Aqsa"},{word:"مصر",meaning:"Egypt"},{word:"بابل",meaning:"Babylon"},{word:"طور",meaning:"Mount Sinai"},{word:"حِراء",meaning:"Hira"},{word:"صفا",meaning:"Safa"},{word:"مروة",meaning:"Marwah"},{word:"الكعبة",meaning:"Kaaba"}],
+verbs:[{word:"خلق",meaning:"Created"},{word:"قال",meaning:"Said"},{word:"جعل",meaning:"Made"},{word:"كتب",meaning:"Wrote"},{word:"أتى",meaning:"Came"},{word:"أرسل",meaning:"Sent"},{word:"علم",meaning:"Taught"},{word:"رزق",meaning:"Provided"},{word:"هدى",meaning:"Guided"},{word:"غفر",meaning:"Forgave"},{word:"رحم",meaning:"Had mercy"},{word:"أحسن",meaning:"Did good"},{word:"نصر",meaning:"Helped"},{word:"سمع",meaning:"Heard"},{word:"بصر",meaning:"Saw"}]};
 
-let categoryWords=[];
+// ===== Classes =====
+class Balloon{constructor(o){this.word=o.word;this.meaning=o.meaning;this.radius=40;this.y=canvas.height+50;this.color=`hsl(${Math.random()*360},70%,60%)`;this.x=o.x;}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);ctx.fillStyle=this.color;ctx.fill();ctx.strokeStyle="#333";ctx.stroke();ctx.fillStyle="#000";ctx.font="30px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(this.word,this.x,this.y);}update(){if(!freezeTime)this.y-=balloonSpeed;}}
+class Particle{constructor(x,y,color){this.x=x;this.y=y;this.vx=(Math.random()-0.5)*4;this.vy=(Math.random()-1.5)*4;this.alpha=1;this.radius=Math.random()*5+2;this.color=color;}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);ctx.fillStyle=`rgba(${this.color.r},${this.color.g},${this.color.b},${this.alpha})`;ctx.fill();}update(){this.x+=this.vx;this.y+=this.vy;this.alpha-=0.03;}}
 
-class Balloon{
-  constructor(obj){
-    this.word=obj.word;
-    this.meaning=obj.meaning;
-    this.radius=40;
-    this.y=canvas.height+50;
-    this.color=`hsl(${Math.random()*360},70%,60%)`;
-    this.x=obj.x;
-  }
-  draw(){
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);
-    ctx.fillStyle=this.color;
-    ctx.fill();
-    ctx.strokeStyle="#333";
-    ctx.stroke();
-    ctx.fillStyle="#000";
-    ctx.font="30px Arial";
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.fillText(this.word,this.x,this.y);
-  }
-  update(){ if(!freezeTime) this.y-=balloonSpeed; }
-}
+// ===== Helpers =====
+function hexToRgb(h){let tmp=document.createElement("div");tmp.style.color=h;document.body.appendChild(tmp);const cs=getComputedStyle(tmp).color.match(/\d+/g);document.body.removeChild(tmp);return {r:cs[0],g:cs[1],b:cs[2]};}
+function playTTS(word){const utter=new SpeechSynthesisUtterance(word);utter.lang="ar-SA";utter.rate=0.9;window.speechSynthesis.speak(utter);}
+function showMeaning(text){popup.textContent=text;popup.style.display="block";setTimeout(()=>{popup.style.display="none";},1500);}
+function showReview(){let html="<h3>Words Learned:</h3><ul>";learnedWords.forEach(w=>{html+=`<li>${w.word} - ${w.meaning}</li>`;});html+="</ul><button onclick='location.reload()'>Play Again</button>";reviewPopup.innerHTML=html;reviewPopup.style.display="block";}
 
-class Pop{
-  constructor(x,y){this.x=x;this.y=y;this.radius=0;this.alpha=1;}
-  draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);
-         ctx.strokeStyle=`rgba(255,0,0,${this.alpha})`;ctx.lineWidth=3;ctx.stroke();}
-  update(){this.radius+=2;this.alpha-=0.05;}
-}
+// ===== Game Logic =====
+function spawnRandomBalloon(){const maxOnScreen=25;if(balloons.length<maxOnScreen){const obj=categoryWords[Math.floor(Math.random()*categoryWords.length)];let attempts=0,x;while(attempts<40){x=Math.random()*(canvas.width-80)+40;if(!balloons.some(b=>Math.abs(b.x-x)<80))break;attempts++;}if(attempts<40)balloons.push(new Balloon({word:obj.word,meaning:obj.meaning,x}));}setTimeout(spawnRandomBalloon,Math.random()*100+50);}
+function nextWord(){currentWord=categoryWords[Math.floor(Math.random()*categoryWords.length)];playTTS(currentWord.word);}
+function gameLoop(){ctx.clearRect(0,0,canvas.width,canvas.height);balloons.forEach((b,i)=>{b.update();b.draw();if(b.y+b.radius<0)balloons.splice(i,1);});particles.forEach((p,i)=>{p.update();p.draw();if(p.alpha<=0)particles.splice(i,1);});requestAnimationFrame(gameLoop);}
+function startTimer(){const timer=setInterval(()=>{if(!freezeTime)timeLeft--;timerEl.textContent=timeLeft;if(timeLeft<=0||lives<=0){clearInterval(timer);showReview();}},1000);}
 
-function playTTS(word){
-  if(ttsAudio){ ttsAudio.pause(); ttsAudio.currentTime=0; }
-  ttsAudio=new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(word)}&tl=ar&client=tw-ob`);
-  ttsAudio.play().catch(()=>{});
-}
+// ===== Events =====
+canvas.addEventListener('click',e=>{const rect=canvas.getBoundingClientRect();const scaleX=canvas.width/rect.width;const scaleY=canvas.height/rect.height;const mx=(e.clientX-rect.left)*scaleX;const my=(e.clientY-rect.top)*scaleY;balloons.forEach((b,i)=>{const dist=Math.hypot(mx-b.x,my-b.y);if(dist<b.radius){if(b.word===currentWord.word){const color=hexToRgb(b.color);for(let j=0;j<15;j++)particles.push(new Particle(b.x,b.y,color));balloons.splice(i,1);score+=doublePoints?2:1;scoreEl.textContent=score;timeLeft+=10;learnedWords.push({word:b.word,meaning:b.meaning});showMeaning(b.meaning);balloonSpeed+=0.1;nextWord();}else{wrongSound.play();playTTS(currentWord.word);lives--;livesEl.textContent=lives;}}});});
 
-function showMeaning(text){
-  popup.textContent=text;
-  popup.style.display="block";
-  setTimeout(()=>{popup.style.display="none";},1500);
-}
-
-function showReview(){
-  let html="<h3>Words Learned:</h3><ul>";
-  learnedWords.forEach(w=>{html+=`<li>${w.word} - ${w.meaning}</li>`;});
-  html+="</ul><button onclick='location.reload()'>Play Again</button>";
-  reviewPopup.innerHTML=html;
-  reviewPopup.style.display="block";
-}
-
-function spawnRandomBalloon(){
-  const maxOnScreen=25;
-  if(balloons.length<maxOnScreen){
-    const obj=categoryWords[Math.floor(Math.random()*categoryWords.length)];
-    let attempts=0,x;
-    while(attempts<40){
-      x=Math.random()*(canvas.width-80)+40;
-      if(!balloons.some(b=>Math.abs(b.x - x)<80)) break;
-      attempts++;
-    }
-    if(attempts<40) balloons.push(new Balloon({word:obj.word,meaning:obj.meaning,x}));
-  }
-  setTimeout(spawnRandomBalloon,Math.random()*120+60);
-}
-
-function nextWord(){
-  currentWord=categoryWords[Math.floor(Math.random()*categoryWords.length)];
-  playTTS(currentWord.word);
-}
-
-function gameLoop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  balloons.forEach((b,i)=>{b.update();b.draw();if(b.y+b.radius<0) balloons.splice(i,1);});
-  pops.forEach((p,i)=>{p.update();p.draw();if(p.alpha<=0)pops.splice(i,1);});
-  requestAnimationFrame(gameLoop);
-}
-
-function startTimer(){
-  const timer=setInterval(()=>{
-    if(!freezeTime) timeLeft--;
-    timerEl.textContent=timeLeft;
-    if(timeLeft<=0 || lives<=0){
-      clearInterval(timer);
-      showReview();
-    }
-  },1000);
-}
-
-canvas.addEventListener('click',e=>{
-  const rect=canvas.getBoundingClientRect();
-  const scaleX=canvas.width/rect.width;
-  const scaleY=canvas.height/rect.height;
-  const mx=(e.clientX-rect.left)*scaleX;
-  const my=(e.clientY-rect.top)*scaleY;
-  balloons.forEach((b,i)=>{
-    const dist=Math.hypot(mx-b.x,my-b.y);
-    if(dist<b.radius){
-      if(b.word===currentWord.word){
-        balloons.splice(i,1);
-        playTTS(b.word);
-        score += doublePoints?2:1;
-        scoreEl.textContent=score;
-        pops.push(new Pop(b.x,b.y));
-        timeLeft += 10;
-        learnedWords.push({word:b.word, meaning:b.meaning});
-        showMeaning(b.meaning);
-        balloonSpeed += 0.1;
-        nextWord();
-      } else {
-        wrongSound.play();
-        playTTS(currentWord.word); // TTS feedback
-        lives--;
-        livesEl.textContent=lives;
-      }
-    }
-  });
-});
-
-freezeBtn.addEventListener('click',()=>{
-  freezeTime=!freezeTime;
-  freezeBtn.textContent=freezeTime?"Unfreeze":"Freeze Time";
-});
-doubleBtn.addEventListener('click',()=>{
-  doublePoints=!doublePoints;
-  doubleBtn.textContent=doublePoints?"Normal Points":"Double Points";
-});
+freezeBtn.addEventListener('click',()=>{freezeTime=!freezeTime;freezeBtn.textContent=freezeTime?"Unfreeze":"Freeze Time";});
+doubleBtn.addEventListener('click',()=>{doublePoints=!doublePoints;doubleBtn.textContent=doublePoints?"Normal Points":"Double Points";});
 
 startBtn.addEventListener('click',()=>{
-  const cat=categorySelect.value;
-  if(!cat){alert("Please select a category!");return;}
-  categoryWords=allWords[cat];
-  startBtn.style.display="none";
-  categorySelect.style.display="none";
-  canvas.style.display="block";
-  document.getElementById('ui').style.display="flex";
-
-  wrongSound=new Audio("https://www.soundjay.com/animal/goat-bleat-01.mp3");
-  bgMusic=new Audio("https://www.soundjay.com/button/button-09.mp3");
+  const cat=categorySelect.value;if(!cat){alert("Select a category!");return;}
+  categoryWords=allWords[cat];startBtn.style.display="none";categorySelect.style.display="none";
+  canvas.style.display="block";document.getElementById('ui').style.display="flex";
   bgMusic.loop=true; bgMusic.volume=0.3; bgMusic.play().catch(()=>{});
-
-  lives=3; livesEl.textContent=lives;
-  nextWord();
-  spawnRandomBalloon();
-  startTimer();
-  gameLoop();
+  lives=3; livesEl.textContent=lives; balloonSpeed=1.5;
+  nextWord(); spawnRandomBalloon(); startTimer(); gameLoop();
 });
 </script>
 </body>

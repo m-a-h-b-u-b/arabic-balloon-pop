@@ -88,9 +88,18 @@ startBtn.addEventListener('click',()=>{
   const cat=categorySelect.value;if(!cat){alert("Select a category!");return;}
   categoryWords=allWords[cat];startBtn.style.display="none";categorySelect.style.display="none";
   canvas.style.display="block";document.getElementById('ui').style.display="flex";
+
+  // ===== FIRST TTS DIRECTLY IN CLICK =====
+  currentWord=categoryWords[Math.floor(Math.random()*categoryWords.length)];
+  const utter=new SpeechSynthesisUtterance(currentWord.word);
+  utter.lang="ar-SA"; utter.rate=0.9;
+  window.speechSynthesis.speak(utter);
+
+  // Music start after click
   bgMusic.loop=true; bgMusic.volume=0.3; bgMusic.play().catch(()=>{});
+
   lives=3; livesEl.textContent=lives; balloonSpeed=1.5;
-  nextWord(); spawnRandomBalloon(); startTimer(); gameLoop();
+  spawnRandomBalloon(); startTimer(); gameLoop();
 });
 </script>
 </body>
